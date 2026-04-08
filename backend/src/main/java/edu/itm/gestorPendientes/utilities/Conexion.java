@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
+//Conexion a la base de datos
 public class Conexion {
 
     Connection con;
