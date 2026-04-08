@@ -13,7 +13,7 @@ public class DocumentationConfig {
         return new OpenAPI()
                 .info(
                         new io.swagger.v3.oas.models.info.Info()
-                                .title("UniWorkPlanner - API REST")
+                                .title("UniWorkPlanner - API de Gestión de Tareas")
                                 .version("1.0")
                                 .description("API REST para gestionar tareas y pendientes de universidad y trabajo. Proyecto del curso de Programación de Software - ITM.")
                                 .contact(new Contact()
