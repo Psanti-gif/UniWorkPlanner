@@ -1,3 +1,4 @@
+-- script de creación de la base de datos
 -- =====================================================
 -- Script de inicialización de la Base de Datos
 -- Proyecto: Gestor de Pendientes (UniWorkPlanner)
