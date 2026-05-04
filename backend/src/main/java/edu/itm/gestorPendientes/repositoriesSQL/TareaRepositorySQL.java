@@ -3,6 +3,7 @@ package edu.itm.gestorPendientes.repositoriesSQL;
 import edu.itm.gestorPendientes.identidadesSQL.Tarea;
 import edu.itm.gestorPendientes.utilities.Conexion;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Connection;
@@ -13,11 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Repository
-public class TareaRepositorySQL {
-    
+@Qualifier("repositorioSQL")
+public class TareaRepositorySQL implements ITareaRepository {
+
     @Autowired
     private TareaRepositoryHelper tareaRepositoryHelper;
 
+    @Override
     public List<Tarea> getTareas() {
         List<Tarea> result = new ArrayList<>();
         Conexion conexion = new Conexion();
@@ -38,7 +41,6 @@ public class TareaRepositorySQL {
                 tarea.setCategoria(resultSet.getString("categoria"));
                 result.add(tarea);
             }
-
         } catch (SQLException exception) {
             exception.printStackTrace();
         } finally {
@@ -48,13 +50,12 @@ public class TareaRepositorySQL {
             } catch (SQLException exc) {
                 exc.printStackTrace();
             } catch (Exception ladenull) {
-
             }
         }
-
         return result;
     }
 
+    @Override
     public Tarea getTareaPorId(Integer id) {
         Tarea tarea = null;
         Conexion conexion = new Conexion();
@@ -75,7 +76,6 @@ public class TareaRepositorySQL {
                 tarea.setEstado(resultSet.getString("estado"));
                 tarea.setCategoria(resultSet.getString("categoria"));
             }
-
         } catch (SQLException exception) {
             exception.printStackTrace();
         } finally {
@@ -85,19 +85,17 @@ public class TareaRepositorySQL {
             } catch (SQLException exc) {
                 exc.printStackTrace();
             } catch (Exception ladenull) {
-
             }
         }
-
         return tarea;
     }
 
+    @Override
     public Tarea insertarTarea(Tarea tarea) {
         Conexion conexion = new Conexion();
         Connection connection = conexion.obtenerConexion();
         PreparedStatement preparedStatement = null;
         try {
-
             preparedStatement = connection.prepareStatement(tareaRepositoryHelper.insertarTarea());
             preparedStatement.setString(1, tarea.getTitulo());
             preparedStatement.setString(2, tarea.getDescripcion());
@@ -113,7 +111,6 @@ public class TareaRepositorySQL {
             preparedStatement.setString(6, tarea.getCategoria() != null ? tarea.getCategoria() : "PERSONAL");
 
             preparedStatement.execute();
-
         } catch (SQLException sqlException) {
             tarea = null;
             sqlException.printStackTrace();
@@ -128,12 +125,12 @@ public class TareaRepositorySQL {
         return tarea;
     }
 
+    @Override
     public Tarea actualizarTarea(Tarea tarea) {
         Conexion conexion = new Conexion();
         Connection connection = conexion.obtenerConexion();
         PreparedStatement preparedStatement = null;
         try {
-
             preparedStatement = connection.prepareStatement(tareaRepositoryHelper.actualizarTarea());
             preparedStatement.setString(1, tarea.getTitulo());
             preparedStatement.setString(2, tarea.getDescripcion());
@@ -150,7 +147,6 @@ public class TareaRepositorySQL {
             preparedStatement.setInt(7, tarea.getIdTarea());
 
             preparedStatement.executeUpdate();
-
         } catch (SQLException sqlException) {
             tarea = null;
             sqlException.printStackTrace();
@@ -165,18 +161,17 @@ public class TareaRepositorySQL {
         return tarea;
     }
 
+    @Override
     public boolean eliminarTarea(Integer id) {
         boolean eliminado = false;
         Conexion conexion = new Conexion();
         Connection connection = conexion.obtenerConexion();
         PreparedStatement preparedStatement = null;
         try {
-
             preparedStatement = connection.prepareStatement(tareaRepositoryHelper.eliminarTarea());
             preparedStatement.setInt(1, id);
             int filasAfectadas = preparedStatement.executeUpdate();
             eliminado = filasAfectadas > 0;
-
         } catch (SQLException sqlException) {
             sqlException.printStackTrace();
         } finally {
