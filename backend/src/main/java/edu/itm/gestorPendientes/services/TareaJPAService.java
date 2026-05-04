@@ -8,12 +8,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@Qualifier("servicioSQL")
-public class TareaServices implements ITareaService {
+@Qualifier("servicioJPA")
+public class TareaJPAService implements ITareaService {
 
     private final ITareaRepository repositorio;
 
-    public TareaServices(@Qualifier("repositorioSQL") ITareaRepository repositorio) {
+    public TareaJPAService(@Qualifier("repositorioJPA") ITareaRepository repositorio) {
         this.repositorio = repositorio;
     }
 

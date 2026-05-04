@@ -17,17 +17,17 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("tareas")
-public class TareaController {
+@RequestMapping("tareas-jpa")
+public class TareaJPAController {
 
     @Autowired
-    @Qualifier("servicioSQL")
+    @Qualifier("servicioJPA")
     private ITareaService services;
 
     @Operation(
-            tags = {"Tareas SQL"},
-            summary = "trae la lista de tareas (SQL/JDBC)",
-            description = "permite consultar las tareas/pendientes usando SQL nativo y los devuelve como json",
+            tags = {"Tareas JPA"},
+            summary = "trae la lista de tareas (JPA)",
+            description = "permite consultar las tareas/pendientes usando JPA/Hibernate y los devuelve como json",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -45,9 +45,9 @@ public class TareaController {
     }
 
     @Operation(
-            tags = {"Tareas SQL"},
-            summary = "obtiene una tarea por su ID (SQL/JDBC)",
-            description = "busca y retorna una tarea especifica por su identificador usando SQL nativo",
+            tags = {"Tareas JPA"},
+            summary = "obtiene una tarea por su ID (JPA)",
+            description = "busca y retorna una tarea especifica por su identificador usando JPA",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -72,9 +72,9 @@ public class TareaController {
     }
 
     @Operation(
-            tags = {"Tareas SQL"},
-            summary = "crea una nueva tarea (SQL/JDBC)",
-            description = "permite insertar una nueva tarea/pendiente usando SQL nativo, el titulo es obligatorio",
+            tags = {"Tareas JPA"},
+            summary = "crea una nueva tarea (JPA)",
+            description = "permite insertar una nueva tarea/pendiente usando JPA, el titulo es obligatorio",
             responses = {
                     @ApiResponse(
                             responseCode = "202",
@@ -98,9 +98,9 @@ public class TareaController {
     }
 
     @Operation(
-            tags = {"Tareas SQL"},
-            summary = "actualiza una tarea existente (SQL/JDBC)",
-            description = "permite modificar los datos de una tarea previamente creada usando SQL nativo",
+            tags = {"Tareas JPA"},
+            summary = "actualiza una tarea existente (JPA)",
+            description = "permite modificar los datos de una tarea previamente creada usando JPA",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -124,9 +124,9 @@ public class TareaController {
     }
 
     @Operation(
-            tags = {"Tareas SQL"},
-            summary = "elimina una tarea por su ID (SQL/JDBC)",
-            description = "permite eliminar permanentemente una tarea de la base de datos usando SQL nativo",
+            tags = {"Tareas JPA"},
+            summary = "elimina una tarea por su ID (JPA)",
+            description = "permite eliminar permanentemente una tarea de la base de datos usando JPA",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
