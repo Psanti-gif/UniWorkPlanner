@@ -19,11 +19,13 @@ public class TareaRepositoryJPAImpl implements ITareaRepository {
     private TareaJpaRepository tareaJpaRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Tarea> getTareas() {
         return tareaJpaRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Tarea getTareaPorId(Integer id) {
         Optional<Tarea> resultado = tareaJpaRepository.findById(id);
         return resultado.orElse(null);
