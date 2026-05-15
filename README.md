@@ -1,4 +1,4 @@
-# UniWorkPlanner 📋
+# UniWorkPlanner
 
 Aplicación web para gestionar pendientes de universidad y trabajo.
 
@@ -13,40 +13,74 @@ Aplicación web para gestionar pendientes de universidad y trabajo.
 
 ## Tecnologías
 
-- **Frontend:** React + Tailwind CSS + Vite
-- **Backend:** Spring Boot 4.0.3 + Java 17 + Gradle
-- **Base de Datos:** MySQL (JDBC puro, patrón DAO)
-- **Documentación API:** Swagger / SpringDoc OpenAPI
+| Capa | Stack |
+|---|---|
+| Frontend | React 19 + Vite 8 + Tailwind CSS 3 |
+| Backend | Spring Boot 4.0.3 + Java 21 + Gradle |
+| Base de datos | MySQL (JPA + patrón DAO) |
+| API docs | Swagger / SpringDoc OpenAPI |
 
 ## Estructura del proyecto
 
 ```
 UniWorkPlanner/
-├── frontend/          → React + Tailwind (Vite)
-└── backend/           → Spring Boot REST API
+├── frontend-react/         → SPA React + Vite + Tailwind
+│   ├── src/
+│   │   ├── components/     → Layout, Sidebar, Toast, Modal, Badge, Spinner
+│   │   ├── pages/          → Dashboard, Tasks (lista/form/detalle/kanban)
+│   │   └── services/       → api.js (axios), taskService.js
+│   ├── .env                → VITE_API_URL
+│   └── vite.config.js
+└── backend/                → Spring Boot REST API
     ├── build.gradle
-    ├── sql/init.sql   → Script para crear la BD
+    ├── sql/init.sql         → Script de creación de BD
     └── src/main/java/edu/itm/gestorPendientes/
-        ├── configuration/     → Swagger config
-        ├── controllers/       → REST Controllers
-        ├── identidadesSQL/    → Entidades/Modelos
-        ├── repositoriesSQL/   → Patrón DAO (JDBC)
-        ├── services/          → Lógica de negocio
-        └── utilities/         → Conexión a BD
+        ├── configuration/   → CORS, Swagger
+        ├── controllers/     → REST Controllers
+        ├── identidadesSQL/  → Entidades/Modelos
+        ├── repositoriesSQL/ → Patrón DAO (JDBC) + JPA
+        ├── services/        → Lógica de negocio
+        └── utilities/       → Conexión a BD
 ```
 
 ## Cómo ejecutar
 
-### Backend
-1. Tener MySQL corriendo (XAMPP o MySQL Server)
-2. Ejecutar `backend/sql/init.sql` en MySQL
-3. En la carpeta `backend/`: `./gradlew bootRun`
-4. Swagger: `http://localhost:8090/uniworkplanner/swagger-ui.html`
+### Requisitos previos
+- Java 21
+- Node.js 18+
+- MySQL corriendo (XAMPP o MySQL Server)
 
-### Frontend
-1. En la carpeta `frontend/`: `npm install`
-2. `npm run dev`
-3. Abrir `http://localhost:5173`
+### 1. Base de datos
+```sql
+-- Ejecutar en MySQL:
+source backend/sql/init.sql
+```
+
+### 2. Backend
+```bash
+cd backend
+./gradlew bootRun
+```
+- Puerto: `http://localhost:8090`
+- Swagger: `http://localhost:8090/uniworkplanner/swagger-ui.html`
+
+### 3. Frontend
+```bash
+cd frontend-react
+npm install
+npm run dev
+```
+- Abre: `http://localhost:5173`
+
+> El archivo `frontend-react/.env` ya apunta al backend en `http://localhost:8090/uniworkplanner`. No requiere configuración adicional.
+
+## Funcionalidades
+
+- Dashboard con estadísticas y tareas próximas a vencer
+- Lista de tareas con filtros por estado, prioridad y búsqueda
+- Crear / editar / eliminar tareas
+- Detalle de tarea con cambio de estado inline
+- Tablero Kanban con drag & drop
 
 ---
 
