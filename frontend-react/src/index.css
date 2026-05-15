@@ -1,0 +1,118 @@
+/* UI/UX Skill: Fira Code + Fira Sans — Dashboard Data pairing */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    @apply font-sans bg-background text-foreground antialiased;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 { @apply font-sans font-semibold text-foreground; }
+  /* UI/UX Skill: Fira Code for data/stats labels */
+  .font-data { @apply font-mono; }
+}
+
+@layer components {
+  /* Sidebar */
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg transition-all duration-150
+           text-teal-100/70 hover:bg-white/10 hover:text-white;
+  }
+  .sidebar-link.active {
+    @apply bg-primary text-white shadow-sm;
+  }
+
+  /* Cards — UI/UX Skill: Flat Design + subtle shadow */
+  .card {
+    @apply bg-white rounded-xl border border-border shadow-card
+           transition-shadow duration-150 hover:shadow-hover;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+           transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-dark focus:ring-primary
+           active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply btn bg-white text-foreground border border-border hover:bg-muted
+           focus:ring-primary active:scale-[0.98];
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500
+           active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn text-muted-fg hover:bg-muted hover:text-foreground;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  /* Form inputs */
+  .input {
+    @apply w-full px-3 py-2 rounded-lg border border-border bg-white text-sm
+           text-foreground placeholder:text-muted-fg
+           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
+           transition-all duration-150;
+  }
+  .select {
+    @apply input appearance-none cursor-pointer;
+  }
+  .label {
+    @apply block text-sm font-medium text-foreground mb-1;
+  }
+
+  /* Badges — UI/UX Skill: functional semantic colors */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-alta     { @apply bg-red-100   text-red-800; }
+  .badge-media    { @apply bg-amber-100 text-amber-800; }
+  .badge-baja     { @apply bg-emerald-100 text-emerald-800; }
+  .badge-pendiente    { @apply bg-amber-100 text-amber-800; }
+  .badge-en_progreso  { @apply bg-blue-100  text-blue-800; }
+  .badge-completada   { @apply bg-emerald-100 text-emerald-800; }
+  .badge-cancelada    { @apply bg-red-100   text-red-800; }
+
+  /* Stat cards — UI/UX Skill: Drill-Down Analytics style */
+  .stat-card {
+    @apply card p-5 flex items-start justify-between gap-4;
+  }
+  .stat-icon {
+    @apply w-11 h-11 rounded-xl flex items-center justify-center text-lg flex-shrink-0;
+  }
+
+  /* Kanban */
+  .kanban-col {
+    @apply bg-muted rounded-xl p-3 min-h-[200px] flex-shrink-0 w-64;
+  }
+  .kanban-card {
+    @apply bg-white rounded-lg p-3 mb-2 shadow-card border-l-4 cursor-grab
+           hover:shadow-hover transition-all duration-150 active:cursor-grabbing;
+  }
+  .kanban-card.dragging { @apply opacity-50 scale-95; }
+  .kanban-col.drag-over { @apply ring-2 ring-primary/40 bg-primary/5; }
+
+  /* Table */
+  .table-row-hover { @apply hover:bg-primary/5 transition-colors duration-100; }
+}
+
+/* Scrollbar sutil */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-primary/40; }
+
+/* Fix root for SPA */
+#root { min-height: 100vh; display: flex; flex-direction: column; }

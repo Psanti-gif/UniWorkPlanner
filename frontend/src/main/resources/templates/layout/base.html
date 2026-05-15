@@ -21,19 +21,19 @@
   <ul class="sidebar-nav flex-grow-1">
     <li>
       <a th:href="@{/dashboard}" class="sidebar-link"
-         th:classappend="${#request.requestURI == '/dashboard' or #request.requestURI == '/'} ? ' active' : ''">
+         th:classappend="${currentUri == '/dashboard' or currentUri == '/'} ? ' active' : ''">
         <i class="bi bi-grid-1x2-fill me-2"></i>Dashboard
       </a>
     </li>
     <li>
       <a th:href="@{/tareas}" class="sidebar-link"
-         th:classappend="${#strings.startsWith(#request.requestURI, '/tareas') and !#strings.contains(#request.requestURI, 'kanban')} ? ' active' : ''">
+         th:classappend="${currentUri != null and #strings.startsWith(currentUri, '/tareas') and !#strings.contains(currentUri, 'kanban')} ? ' active' : ''">
         <i class="bi bi-list-task me-2"></i>Mis Tareas
       </a>
     </li>
     <li>
       <a th:href="@{/tareas/kanban}" class="sidebar-link"
-         th:classappend="${#strings.contains(#request.requestURI, 'kanban')} ? ' active' : ''">
+         th:classappend="${currentUri != null and #strings.contains(currentUri, 'kanban')} ? ' active' : ''">
         <i class="bi bi-kanban me-2"></i>Tablero Kanban
       </a>
     </li>
