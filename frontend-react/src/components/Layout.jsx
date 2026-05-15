@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
+import { AIChatPanel } from './AIChatPanel'
+import { toast } from './Toast'
+import { taskService } from '../services/taskService'
 
 const PAGE_TITLES = {
   '/dashboard':    'Dashboard',
@@ -12,6 +15,31 @@ const PAGE_TITLES = {
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { pathname } = useLocation()
+
+  // Notificaciones de vencimiento — una sola vez por sesión
+  useEffect(() => {
+    if (sessionStorage.getItem('expiry_notified')) return
+    sessionStorage.setItem('expiry_notified', '1')
+    taskService.getAll().then(tareas => {
+      const toDay = (v) => { const d = new Date(v); d.setHours(0, 0, 0, 0); return d }
+      const today    = toDay(new Date())
+      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
+
+      const urgentes = tareas.filter(t => {
+        if (!t.fechaVencimiento || t.estado === 'COMPLETADA' || t.estado === 'CANCELADA') return false
+        const vc = toDay(t.fechaVencimiento)
+        return vc >= today && vc <= tomorrow
+      })
+
+      if (urgentes.length === 0) return
+      setTimeout(() => {
+        urgentes.forEach(t => {
+          const isHoy = toDay(t.fechaVencimiento).getTime() === today.getTime()
+          toast.error(`⚠️ "${t.titulo}" vence ${isHoy ? 'hoy' : 'mañana'}`)
+        })
+      }, 1200)
+    }).catch(() => {})
+  }, [])
 
   const title = PAGE_TITLES[pathname]
     || (pathname.includes('/edit') ? 'Editar Tarea'
@@ -45,6 +73,8 @@ export function Layout() {
           </div>
         </main>
       </div>
+
+      <AIChatPanel />
     </div>
   )
 }

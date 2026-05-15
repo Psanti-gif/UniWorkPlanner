@@ -25,6 +25,20 @@ CREATE TABLE IF NOT EXISTS tareas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
+-- Tabla: archivos
+-- =====================================================
+CREATE TABLE IF NOT EXISTS archivos (
+    idArchivo INT AUTO_INCREMENT PRIMARY KEY,
+    idTarea INT NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100),
+    ruta VARCHAR(500) NOT NULL,
+    tamanio BIGINT,
+    fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (idTarea) REFERENCES tareas(idTarea) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
 -- Datos de prueba
 -- =====================================================
 INSERT INTO tareas (titulo, descripcion, fecha_vencimiento, prioridad, estado, categoria) VALUES

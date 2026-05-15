@@ -1,27 +1,77 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { taskService } from '../../services/taskService'
+import { fileService } from '../../services/fileService'
 import { PrioridadBadge, EstadoBadge } from '../../components/Badge'
 import { Modal } from '../../components/Modal'
 import { PageLoader } from '../../components/LoadingSpinner'
 import { toast } from '../../components/Toast'
+
+const FILE_ICONS = {
+  'application/pdf': '📄',
+  'image/png': '🖼️', 'image/jpeg': '🖼️', 'image/gif': '🖼️', 'image/webp': '🖼️',
+  'application/vnd.ms-excel': '📊',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📊',
+  'application/msword': '📝',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
+  'application/zip': '🗜️',
+}
+const fileIcon = (tipo) => FILE_ICONS[tipo] || '📎'
+const formatSize = (bytes) => {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 const ESTADOS = ['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA', 'CANCELADA']
 
 export function TaskDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [tarea, setTarea]       = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [delOpen, setDelOpen]   = useState(false)
-  const [updating, setUpdating] = useState(false)
+  const [tarea, setTarea]         = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [delOpen, setDelOpen]     = useState(false)
+  const [updating, setUpdating]   = useState(false)
+  const [archivos, setArchivos]   = useState([])
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     taskService.getById(id)
       .then(setTarea)
       .catch(e => { toast.error(e.message); navigate('/tasks') })
       .finally(() => setLoading(false))
+    fileService.listar(id).then(setArchivos).catch(() => {})
   }, [id])
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
+    setUploading(true)
+    try {
+      for (const f of files) {
+        const nuevo = await fileService.subir(id, f)
+        setArchivos(prev => [...prev, nuevo])
+      }
+      toast.success(`${files.length === 1 ? 'Archivo adjuntado' : `${files.length} archivos adjuntados`}`)
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleFileDelete = async (idArchivo) => {
+    try {
+      await fileService.eliminar(idArchivo)
+      setArchivos(prev => prev.filter(a => a.idArchivo !== idArchivo))
+      toast.success('Archivo eliminado.')
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
 
   const handleStatusChange = async (estado) => {
     if (estado === tarea.estado) return
@@ -127,6 +177,52 @@ export function TaskDetailPage() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Archivos adjuntos */}
+      <div className="card p-4 mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-semibold text-foreground">Archivos adjuntos</p>
+          <label className={`btn-secondary btn-sm cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+            {uploading ? '⏳ Subiendo...' : '📎 Adjuntar'}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              onChange={handleFileUpload}
+            />
+          </label>
+        </div>
+        {archivos.length === 0 ? (
+          <p className="text-xs text-muted-fg py-2">Sin archivos adjuntos.</p>
+        ) : (
+          <div className="space-y-2">
+            {archivos.map(a => (
+              <div key={a.idArchivo} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg flex-shrink-0">{fileIcon(a.tipo)}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{a.nombre}</p>
+                    <p className="text-xs text-muted-fg font-mono">{formatSize(a.tamanio)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-1 ml-3 flex-shrink-0">
+                  <button
+                    onClick={() => fileService.descargar(a.idArchivo, a.nombre)}
+                    className="btn-ghost btn-sm"
+                    title="Descargar"
+                  >⬇️</button>
+                  <button
+                    onClick={() => handleFileDelete(a.idArchivo)}
+                    className="btn-ghost btn-sm text-red-500"
+                    title="Eliminar"
+                  >🗑️</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Modal
