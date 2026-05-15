@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/base :: head(${pageTitle})}">
+  <title>Mis Tareas</title>
+</head>
+<body>
+<div class="wrapper d-flex">
+
+  <div th:replace="~{layout/base :: sidebar}"></div>
+
+  <main class="main-content flex-grow-1">
+    <nav class="navbar navbar-light bg-white border-bottom px-3 d-lg-none">
+      <button class="btn btn-link p-0" id="sidebarToggle">
+        <i class="bi bi-list fs-4 text-dark"></i>
+      </button>
+      <span class="navbar-brand mb-0 fw-bold">Mis Tareas</span>
+    </nav>
+
+    <div class="container-fluid px-4 pt-3">
+      <div th:replace="~{layout/base :: alerts}"></div>
+
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0">Mis Tareas</h4>
+        <a th:href="@{/tareas/nueva}" class="btn btn-primary">
+          <i class="bi bi-plus-lg me-1"></i>Nueva Tarea
+        </a>
+      </div>
+
+      <!-- Filtros -->
+      <form method="get" th:action="@{/tareas}" class="card mb-3">
+        <div class="card-body py-3">
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="searchInput" name="q" class="form-control"
+                       placeholder="Buscar tareas..." th:value="${filtroQ}"/>
+              </div>
+            </div>
+            <div class="col-6 col-md-2">
+              <select name="estado" class="form-select form-select-sm">
+                <option value="">Todos los estados</option>
+                <option value="PENDIENTE"    th:selected="${filtroEstado == 'PENDIENTE'}">Pendiente</option>
+                <option value="EN_PROGRESO"  th:selected="${filtroEstado == 'EN_PROGRESO'}">En Progreso</option>
+                <option value="COMPLETADA"   th:selected="${filtroEstado == 'COMPLETADA'}">Completada</option>
+                <option value="CANCELADA"    th:selected="${filtroEstado == 'CANCELADA'}">Cancelada</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <select name="prioridad" class="form-select form-select-sm">
+                <option value="">Todas las prioridades</option>
+                <option value="ALTA"  th:selected="${filtroPrioridad == 'ALTA'}">Alta</option>
+                <option value="MEDIA" th:selected="${filtroPrioridad == 'MEDIA'}">Media</option>
+                <option value="BAJA"  th:selected="${filtroPrioridad == 'BAJA'}">Baja</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <input type="text" name="categoria" class="form-control form-control-sm"
+                     placeholder="Categoría..." th:value="${filtroCategoria}"/>
+            </div>
+            <div class="col-6 col-md-2 d-flex gap-2">
+              <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                <i class="bi bi-funnel me-1"></i>Filtrar
+              </button>
+              <a th:href="@{/tareas}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x-lg"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <!-- TABLA (desktop) -->
+      <div class="card table-tasks">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">#</th>
+                  <th>Título</th>
+                  <th class="d-none d-md-table-cell">Categoría</th>
+                  <th>Prioridad</th>
+                  <th>Estado</th>
+                  <th class="d-none d-md-table-cell">Vencimiento</th>
+                  <th class="text-end pe-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:if="${#lists.isEmpty(tareas)}">
+                  <td colspan="7" class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                    No hay tareas. <a th:href="@{/tareas/nueva}">Crea la primera</a>
+                  </td>
+                </tr>
+                <tr th:each="t : ${tareas}">
+                  <td class="ps-3 text-muted small" th:text="${t.idTarea}">1</td>
+                  <td>
+                    <a th:href="@{/tareas/{id}(id=${t.idTarea})}" class="fw-medium text-decoration-none text-dark"
+                       th:text="${t.titulo}">Tarea</a>
+                    <p class="text-muted small mb-0 text-truncate-2"
+                       th:text="${t.descripcion}" style="max-width:280px;"></p>
+                  </td>
+                  <td class="d-none d-md-table-cell">
+                    <span th:if="${t.categoria}" class="badge bg-light text-dark border"
+                          th:text="${t.categoria}">cat</span>
+                    <span th:unless="${t.categoria}" class="text-muted small">—</span>
+                  </td>
+                  <td>
+                    <span th:class="'badge ' + (${t.prioridad} == 'ALTA' ? 'bg-danger' :
+                                                (${t.prioridad} == 'MEDIA' ? 'bg-warning text-dark' :
+                                                (${t.prioridad} == 'BAJA' ? 'bg-success' : 'bg-secondary')))"
+                          th:text="${t.prioridad ?: '—'}"></span>
+                  </td>
+                  <td>
+                    <span th:class="'badge badge-estado-' + ${t.estado != null ? t.estado.toLowerCase() : 'sin_estado'}"
+                          th:text="${t.estado ?: '—'}"></span>
+                  </td>
+                  <td class="d-none d-md-table-cell">
+                    <span th:if="${t.fechaVencimiento != null}"
+                          th:class="${#dates.createToday().after(t.fechaVencimiento)} ? 'fecha-vencida small' : 'small'"
+                          th:text="${#dates.format(t.fechaVencimiento, 'dd/MM/yyyy')}"></span>
+                    <span th:unless="${t.fechaVencimiento != null}" class="text-muted small">—</span>
+                  </td>
+                  <td class="text-end pe-3">
+                    <div class="d-flex justify-content-end gap-1">
+                      <a th:href="@{/tareas/{id}(id=${t.idTarea})}"
+                         class="btn btn-sm btn-outline-secondary" title="Ver">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      <a th:href="@{/tareas/{id}/editar(id=${t.idTarea})}"
+                         class="btn btn-sm btn-outline-primary" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <form th:action="@{/tareas/{id}/eliminar(id=${t.idTarea})}" method="post"
+                            th:id="'form-del-' + ${t.idTarea}" class="d-inline">
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                title="Eliminar"
+                                th:attr="data-confirm='¿Eliminar esta tarea?',data-form='form-del-' + ${t.idTarea}">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARJETAS (mobile) -->
+      <div class="cards-tasks" style="display:none;">
+        <div th:if="${#lists.isEmpty(tareas)}" class="text-center py-4 text-muted">
+          <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+          No hay tareas. <a th:href="@{/tareas/nueva}">Crea la primera</a>
+        </div>
+        <div th:each="t : ${tareas}" class="card card-task mb-2"
+             th:classappend="'prioridad-' + ${t.prioridad != null ? t.prioridad.toLowerCase() : 'sin'}">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <a th:href="@{/tareas/{id}(id=${t.idTarea})}" class="fw-medium text-decoration-none text-dark d-block"
+                   th:text="${t.titulo}">Tarea</a>
+                <div class="d-flex gap-2 mt-1">
+                  <span th:if="${t.prioridad}"
+                        th:class="'badge ' + (${t.prioridad} == 'ALTA' ? 'bg-danger' :
+                                              (${t.prioridad} == 'MEDIA' ? 'bg-warning text-dark' : 'bg-success'))"
+                        th:text="${t.prioridad}"></span>
+                  <span th:if="${t.estado}"
+                        th:class="'badge badge-estado-' + ${t.estado.toLowerCase()}"
+                        th:text="${t.estado}"></span>
+                </div>
+              </div>
+              <div class="d-flex gap-1 ms-2">
+                <a th:href="@{/tareas/{id}/editar(id=${t.idTarea})}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form th:action="@{/tareas/{id}/eliminar(id=${t.idTarea})}" method="post"
+                      th:id="'form-del-m-' + ${t.idTarea}" class="d-inline">
+                  <button type="button" class="btn btn-sm btn-outline-danger"
+                          th:attr="data-confirm='¿Eliminar esta tarea?',data-form='form-del-m-' + ${t.idTarea}">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div th:replace="~{layout/base :: scripts}"></div>
+</body>
+</html>
