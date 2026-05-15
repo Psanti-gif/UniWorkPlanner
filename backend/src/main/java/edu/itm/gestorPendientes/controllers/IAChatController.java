@@ -30,7 +30,7 @@ public class IAChatController {
             }
 
             String system = buildSystem(tareas);
-            String body = "{\"model\":\"claude-haiku-4-5-20251001\",\"max_tokens\":1024," +
+            String body = "{\"model\":\"claude-haiku-4-5-20251001\",\"max_tokens\":2048," +
                     "\"system\":\"" + esc(system) + "\"," +
                     "\"messages\":[{\"role\":\"user\",\"content\":\"" + esc(mensaje) + "\"}]}";
 
@@ -58,12 +58,26 @@ public class IAChatController {
 
     private String buildSystem(List<?> tareas) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Eres un asistente de productividad para UniWorkPlanner. ");
-        sb.append("Ayudas al usuario a organizar y priorizar sus tareas académicas y laborales. ");
-        sb.append("Responde siempre en español, de forma concisa y práctica.\\n\\n");
+        sb.append("Eres un asistente de productividad para UniWorkPlanner que puede EJECUTAR acciones reales.\n\n");
+
+        sb.append("FORMATO DE RESPUESTA OBLIGATORIO — responde SIEMPRE en JSON puro (sin markdown, sin bloques de código):\n");
+        sb.append("Sin acción: {\"mensaje\":\"tu respuesta\",\"accion\":null}\n");
+        sb.append("Con acción: {\"mensaje\":\"descripción amigable\",\"accion\":{\"tipo\":\"TIPO\",\"descripcion\":\"resumen breve para confirmar\",...campos}}\n\n");
+
+        sb.append("TIPOS DE ACCIÓN disponibles y sus campos adicionales:\n");
+        sb.append("CAMBIAR_ESTADO  → idTarea (número), nuevoEstado (PENDIENTE|EN_PROGRESO|COMPLETADA|CANCELADA)\n");
+        sb.append("CAMBIAR_PRIORIDAD → idTarea (número), nuevaPrioridad (ALTA|MEDIA|BAJA)\n");
+        sb.append("CREAR_TAREA     → titulo (obligatorio), prioridad (ALTA|MEDIA|BAJA), estado (PENDIENTE), categoria (UNIVERSIDAD|TRABAJO|PERSONAL), descripcion (opcional), fechaVencimiento como YYYY-MM-DD (opcional)\n");
+        sb.append("ELIMINAR_TAREA  → idTarea (número)\n\n");
+
+        sb.append("REGLAS:\n");
+        sb.append("- Propón acción SOLO cuando el usuario pida EXPLÍCITAMENTE modificar algo.\n");
+        sb.append("- Para preguntas, análisis y recomendaciones usa accion:null.\n");
+        sb.append("- Identifica la tarea correcta por título o ID desde el contexto.\n");
+        sb.append("- El campo 'descripcion' dentro de accion debe ser claro para que el usuario confirme o rechace.\n\n");
 
         if (!tareas.isEmpty()) {
-            sb.append("Tareas actuales del usuario:\\n");
+            sb.append("Tareas actuales del usuario:\n");
             for (Object t : tareas) {
                 if (t instanceof Map<?, ?> m) {
                     Object id        = m.get("idTarea");
@@ -71,7 +85,7 @@ public class IAChatController {
                     Object prioridad = m.get("prioridad");
                     Object estado    = m.get("estado");
                     Object fecha     = m.get("fechaVencimiento");
-                    sb.append(String.format("- [#%s] \\\"%s\\\" | Prioridad: %s | Estado: %s | Vence: %s\\n",
+                    sb.append(String.format("- [#%s] \"%s\" | Prioridad: %s | Estado: %s | Vence: %s\n",
                             id        != null ? id        : "?",
                             titulo    != null ? titulo    : "Sin título",
                             prioridad != null ? prioridad : "-",
@@ -79,7 +93,6 @@ public class IAChatController {
                             fecha     != null ? fecha     : "Sin fecha"));
                 }
             }
-            sb.append("\\nUsa este contexto para dar recomendaciones específicas y útiles.");
         }
         return sb.toString();
     }
