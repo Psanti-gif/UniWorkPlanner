@@ -37,19 +37,23 @@ export function DashboardPage() {
     return acc
   }, {})
 
-  const now = new Date()
+  const toDay = (v) => { const d = new Date(v); d.setHours(0, 0, 0, 0); return d }
+  const today = toDay(new Date())
+  const limitDay = new Date(today)
+  limitDay.setDate(today.getDate() + 3)
+
   const proximasVencer = tareas
     .filter(t => {
       if (!t.fechaVencimiento || t.estado === 'COMPLETADA' || t.estado === 'CANCELADA') return false
-      const diff = new Date(t.fechaVencimiento) - now
-      return diff > 0 && diff <= 3 * 24 * 60 * 60 * 1000
+      const vc = toDay(t.fechaVencimiento)
+      return vc >= today && vc <= limitDay
     })
     .sort((a, b) => new Date(a.fechaVencimiento) - new Date(b.fechaVencimiento))
     .slice(0, 5)
 
   const vencidas = tareas.filter(t => {
     if (!t.fechaVencimiento || t.estado === 'COMPLETADA' || t.estado === 'CANCELADA') return false
-    return new Date(t.fechaVencimiento) < now
+    return toDay(t.fechaVencimiento) < today
   })
 
   const completadas = byEstado['COMPLETADA'] || 0

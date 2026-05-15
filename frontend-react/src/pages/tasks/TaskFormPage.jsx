@@ -45,7 +45,10 @@ export function TaskFormPage() {
     try {
       const payload = {
         ...form,
-        fechaVencimiento: form.fechaVencimiento ? new Date(form.fechaVencimiento).getTime() : null,
+        fechaVencimiento: form.fechaVencimiento ? (() => {
+          const [y, m, d] = form.fechaVencimiento.split('-').map(Number)
+          return new Date(y, m - 1, d).getTime() // local midnight, not UTC
+        })() : null,
       }
       if (isEdit) {
         await taskService.update(payload)
