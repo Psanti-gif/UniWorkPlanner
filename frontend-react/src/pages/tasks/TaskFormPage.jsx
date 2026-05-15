@@ -123,9 +123,12 @@ export function TaskFormPage() {
             </div>
             <div>
               <label className="label">Categoría</label>
-              <input className="input" value={form.categoria || ''} maxLength={20}
-                     placeholder="Ej: Universidad, Trabajo..."
-                     onChange={e => set('categoria', e.target.value)} />
+              <select className="select" value={form.categoria || ''} onChange={e => set('categoria', e.target.value)}>
+                <option value="">Sin categoría</option>
+                <option value="UNIVERSIDAD">Universidad</option>
+                <option value="TRABAJO">Trabajo</option>
+                <option value="PERSONAL">Personal</option>
+              </select>
             </div>
           </div>
 
