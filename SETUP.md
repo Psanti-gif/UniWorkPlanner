@@ -100,26 +100,25 @@ Descarga e instala en este orden:
 
 ---
 
-## 4. Configurar la API key de la IA (opcional pero recomendado)
+## 4. Configurar la API key del asistente IA
 
-El asistente IA usa Claude (Anthropic). **Sin API key, el asistente no funciona pero el resto de la app sí.**
+El asistente IA usa Claude (Anthropic). **Sin API key, el asistente no funciona** pero el resto de la app (crear tareas, kanban, archivos, etc.) sí.
 
-### Si quieres usar el asistente IA:
+### Paso a paso:
 
-1. Pide a Santiago la API key del proyecto **o** crea una tuya:
-   - Ve a <https://console.anthropic.com/>
-   - Registra una cuenta (te dan créditos gratis para empezar)
-   - **API Keys** → **Create Key** → copia la key (empieza con `sk-ant-api03-...`)
+1. **Pídele a Santiago la API key del proyecto por WhatsApp privado.**
+   - Empieza con `sk-ant-api03-...`
+   - **NUNCA la pidas por GitHub, ni por el chat público del grupo, ni la copies a sitios online.**
 
 2. Abre el archivo `backend/src/main/resources/application-dev.yaml` en VS Code.
 
-3. Busca la línea:
+3. Busca la línea (al final del archivo):
    ```yaml
    anthropic:
      api-key: TU_API_KEY_AQUI
    ```
 
-4. Reemplaza `TU_API_KEY_AQUI` con tu key real:
+4. Reemplaza `TU_API_KEY_AQUI` con la key que te pasó Santiago:
    ```yaml
    anthropic:
      api-key: sk-ant-api03-xxxxxxxxxxxxx
@@ -127,11 +126,30 @@ El asistente IA usa Claude (Anthropic). **Sin API key, el asistente no funciona 
 
 5. **Guarda el archivo (Ctrl+S).**
 
-> **⚠️ MUY IMPORTANTE:** **NUNCA hagas `git commit` con tu API key dentro.** Antes de cualquier `git push`, ejecuta:
+> **🚨 REGLA CRÍTICA — NUNCA HAGAS `git commit` DE ESTE ARCHIVO CON LA KEY DENTRO.**
+>
+> El repositorio es **público en GitHub**. Si subes la key:
+> - GitHub la detecta automáticamente con su secret-scanner
+> - Anthropic la revoca en minutos
+> - Bots pueden robarla antes de la revocación y gastar el saldo del equipo
+> - **A todos deja de funcionarle el asistente IA** hasta que Santiago genere una nueva
+>
+> Antes de cualquier `git push`, **siempre** ejecuta:
 > ```powershell
 > git status
 > ```
-> Si ves `application-dev.yaml` en la lista, **NO lo agregues al commit**. Tu key es personal y secreta.
+> Si ves `backend/src/main/resources/application-dev.yaml` en la lista de archivos modificados, **NO lo incluyas en el commit**. Si ya lo agregaste con `git add`, quítalo:
+> ```powershell
+> git restore --staged backend/src/main/resources/application-dev.yaml
+> ```
+>
+> Si por accidente ya hiciste `commit` pero **NO has hecho `push`**:
+> ```powershell
+> git reset HEAD~1
+> ```
+> Luego revisa con `git log` que el commit ya no esté y arregla la situación.
+>
+> Si ya hiciste `push` con la key: **avisa a Santiago inmediatamente por WhatsApp** para que rote la key en console.anthropic.com.
 
 ---
 
