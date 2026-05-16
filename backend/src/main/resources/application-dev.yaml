@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/gestor_pendientes
+    url: jdbc:mysql://localhost:3306/gestor_pendientes?useUnicode=true&characterEncoding=UTF-8&useSSL=false
     username: root
     password:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -17,3 +17,14 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+app:
+  upload-dir: uploads
+
+# Reemplaza con tu API key de Anthropic (console.anthropic.com)
+anthropic:
+  api-key: TU_API_KEY_AQUI
