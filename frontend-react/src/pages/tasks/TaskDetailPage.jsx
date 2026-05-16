@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { taskService } from '../../services/taskService'
 import { fileService } from '../../services/fileService'
-import { PrioridadBadge, EstadoBadge } from '../../components/Badge'
+import { PrioridadBadge, EstadoBadge, CategoriaBadge } from '../../components/Badge'
 import { Modal } from '../../components/Modal'
 import { PageLoader } from '../../components/LoadingSpinner'
 import { toast } from '../../components/Toast'
+
+const ESTADOS = ['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA', 'CANCELADA']
+const ESTADO_LABEL = { PENDIENTE: 'Pendiente', EN_PROGRESO: 'En progreso', COMPLETADA: 'Completada', CANCELADA: 'Cancelada' }
 
 const FILE_ICONS = {
   'application/pdf': '📄',
@@ -23,8 +27,6 @@ const formatSize = (bytes) => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
-
-const ESTADOS = ['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA', 'CANCELADA']
 
 export function TaskDetailPage() {
   const { id } = useParams()
@@ -45,6 +47,22 @@ export function TaskDetailPage() {
     fileService.listar(id).then(setArchivos).catch(() => {})
   }, [id])
 
+  const handleStatusChange = async (estado) => {
+    if (estado === tarea.estado) return
+    setUpdating(true)
+    try {
+      const updated = await taskService.updateStatus(id, estado)
+      setTarea(updated)
+      toast.success(`Estado: ${ESTADO_LABEL[estado]}`)
+    } catch (e) { toast.error(e.message) }
+    finally { setUpdating(false) }
+  }
+
+  const handleDelete = async () => {
+    try { await taskService.delete(id); toast.success('Tarea eliminada'); navigate('/tasks') }
+    catch (e) { toast.error(e.message) }
+  }
+
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files)
     if (!files.length) return
@@ -54,184 +72,144 @@ export function TaskDetailPage() {
         const nuevo = await fileService.subir(id, f)
         setArchivos(prev => [...prev, nuevo])
       }
-      toast.success(`${files.length === 1 ? 'Archivo adjuntado' : `${files.length} archivos adjuntados`}`)
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setUploading(false)
-      e.target.value = ''
-    }
+      toast.success(files.length === 1 ? 'Archivo adjuntado' : `${files.length} archivos adjuntados`)
+    } catch (err) { toast.error(err.message) }
+    finally { setUploading(false); e.target.value = '' }
   }
 
   const handleFileDelete = async (idArchivo) => {
     try {
       await fileService.eliminar(idArchivo)
       setArchivos(prev => prev.filter(a => a.idArchivo !== idArchivo))
-      toast.success('Archivo eliminado.')
-    } catch (err) {
-      toast.error(err.message)
-    }
-  }
-
-  const handleStatusChange = async (estado) => {
-    if (estado === tarea.estado) return
-    setUpdating(true)
-    try {
-      const updated = await taskService.updateStatus(id, estado)
-      setTarea(updated)
-      toast.success(`Estado → ${estado.replace('_', ' ')}`)
-    } catch (e) {
-      toast.error(e.message)
-    } finally {
-      setUpdating(false)
-    }
-  }
-
-  const handleDelete = async () => {
-    try {
-      await taskService.delete(id)
-      toast.success('Tarea eliminada.')
-      navigate('/tasks')
-    } catch (e) {
-      toast.error(e.message)
-    }
+      toast.success('Archivo eliminado')
+    } catch (err) { toast.error(err.message) }
   }
 
   if (loading) return <PageLoader />
 
   const vc = tarea.fechaVencimiento ? new Date(tarea.fechaVencimiento) : null
-  const vencida = vc && vc < new Date() && tarea.estado !== 'COMPLETADA'
+  const vencida = vc && vc < new Date() && tarea.estado !== 'COMPLETADA' && tarea.estado !== 'CANCELADA'
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto space-y-5">
       {/* Breadcrumb */}
-      <nav className="text-xs text-muted-fg mb-4 flex gap-2 items-center font-mono">
-        <Link to="/tasks" className="hover:text-primary">Tareas</Link>
+      <nav className="text-2xs text-ink-faint flex items-center gap-1.5 font-mono">
+        <Link to="/tasks" className="hover:text-foreground transition-colors">Tareas</Link>
         <span>/</span>
-        <span className="text-foreground truncate max-w-xs">{tarea.titulo}</span>
+        <span className="text-muted-fg truncate max-w-xs">{tarea.titulo}</span>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main card */}
-        <div className="lg:col-span-2 card p-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <h2 className="text-xl font-bold text-foreground">{tarea.titulo}</h2>
-            <div className="flex gap-2 flex-shrink-0">
-              <Link to={`/tasks/${id}/edit`} className="btn-secondary btn-sm">✏️ Editar</Link>
-              <button onClick={() => setDelOpen(true)} className="btn-ghost btn-sm text-red-500">🗑️</button>
+        {/* Main */}
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="lg:col-span-2 card p-6">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <h1 className="text-foreground flex-1">{tarea.titulo}</h1>
+            <div className="flex gap-1 flex-shrink-0">
+              <Link to={`/tasks/${id}/edit`} className="btn-secondary btn-sm">Editar</Link>
+              <button onClick={() => setDelOpen(true)} className="btn-ghost btn-sm hover:text-danger" title="Eliminar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-5">
+          <div className="flex flex-wrap gap-1.5 mb-5">
             <PrioridadBadge value={tarea.prioridad} />
             <EstadoBadge value={tarea.estado} />
-            {tarea.categoria && <span className="badge bg-gray-100 text-gray-600">{tarea.categoria}</span>}
+            <CategoriaBadge value={tarea.categoria} />
           </div>
 
           {tarea.descripcion ? (
-            <p className="text-sm text-foreground leading-relaxed bg-muted rounded-lg p-3 mb-5">
-              {tarea.descripcion}
-            </p>
+            <p className="text-sm text-foreground leading-relaxed mb-6 whitespace-pre-wrap">{tarea.descripcion}</p>
           ) : (
-            <p className="text-sm text-muted-fg italic mb-5">Sin descripción.</p>
+            <p className="text-sm text-ink-faint italic mb-6">Sin descripción.</p>
           )}
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
             <div>
-              <p className="text-xs text-muted-fg uppercase font-mono tracking-wide mb-1">Creada</p>
-              <p className="font-medium font-mono text-foreground">
-                {tarea.fechaCreacion ? new Date(tarea.fechaCreacion).toLocaleDateString('es-CO') : '—'}
+              <p className="text-2xs uppercase tracking-wider text-ink-faint font-medium mb-1">Creada</p>
+              <p className="text-sm font-mono text-foreground">
+                {tarea.fechaCreacion ? new Date(tarea.fechaCreacion).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-fg uppercase font-mono tracking-wide mb-1">Vencimiento</p>
-              <p className={`font-medium font-mono ${vencida ? 'text-red-600' : 'text-foreground'}`}>
-                {vc ? vc.toLocaleDateString('es-CO') : '—'}
-                {vencida && <span className="ml-1 text-xs">⚠️ Vencida</span>}
+              <p className="text-2xs uppercase tracking-wider text-ink-faint font-medium mb-1">Vencimiento</p>
+              <p className={`text-sm font-mono ${vencida ? 'text-danger font-semibold' : 'text-foreground'}`}>
+                {vc ? vc.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                {vencida && <span className="ml-2 text-2xs text-danger">vencida</span>}
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Estado panel */}
-        <div className="card p-4">
-          <p className="text-xs text-muted-fg uppercase font-mono tracking-wide mb-3">Cambiar Estado</p>
-          <div className="space-y-2">
+        {/* Sidebar — change status */}
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05 }} className="card p-4 h-fit">
+          <p className="text-2xs uppercase tracking-wider text-ink-faint font-medium mb-2.5">Cambiar estado</p>
+          <div className="space-y-1">
             {ESTADOS.map(est => (
               <button
                 key={est}
                 onClick={() => handleStatusChange(est)}
                 disabled={updating}
-                className={`w-full px-3 py-2 rounded-lg text-sm text-left font-medium transition-all duration-150
-                  ${tarea.estado === est
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-muted text-foreground hover:bg-primary/10 hover:text-primary'}`}
+                className={`w-full px-2.5 py-1.5 rounded-md text-sm text-left font-medium transition-all duration-150 disabled:opacity-60
+                  ${tarea.estado === est ? 'bg-foreground text-white' : 'text-foreground hover:bg-muted'}`}
               >
-                {est.replace('_', ' ')}
+                {ESTADO_LABEL[est]}
               </button>
             ))}
           </div>
-          <div className="mt-4 pt-3 border-t border-border">
-            <Link to="/tasks" className="text-xs text-muted-fg hover:text-primary flex items-center gap-1">
-              ← Volver a la lista
-            </Link>
-          </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Archivos adjuntos */}
-      <div className="card p-4 mt-4">
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.1 }} className="card p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-foreground">Archivos adjuntos</p>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Archivos adjuntos</p>
+            <p className="text-2xs text-ink-faint mt-0.5">PDF, imágenes, Excel, Word, ZIP — hasta 20MB</p>
+          </div>
           <label className={`btn-secondary btn-sm cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
-            {uploading ? '⏳ Subiendo...' : '📎 Adjuntar'}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              multiple
-              onChange={handleFileUpload}
-            />
+            {uploading ? 'Subiendo…' : '+ Adjuntar'}
+            <input ref={fileInputRef} type="file" className="hidden" multiple onChange={handleFileUpload} />
           </label>
         </div>
         {archivos.length === 0 ? (
-          <p className="text-xs text-muted-fg py-2">Sin archivos adjuntos.</p>
+          <p className="text-2xs text-ink-faint py-3">Sin archivos adjuntos.</p>
         ) : (
-          <div className="space-y-2">
-            {archivos.map(a => (
-              <div key={a.idArchivo} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-lg flex-shrink-0">{fileIcon(a.tipo)}</span>
+          <div className="space-y-1.5">
+            {archivos.map((a, i) => (
+              <motion.div
+                key={a.idArchivo}
+                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, delay: i * 0.04 }}
+                className="flex items-center justify-between bg-muted rounded-md px-3 py-2 group hover:bg-muted-2 transition-colors"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-base flex-shrink-0">{fileIcon(a.tipo)}</span>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{a.nombre}</p>
-                    <p className="text-xs text-muted-fg font-mono">{formatSize(a.tamanio)}</p>
+                    <p className="text-2xs text-ink-faint font-mono">{formatSize(a.tamanio)}</p>
                   </div>
                 </div>
-                <div className="flex gap-1 ml-3 flex-shrink-0">
-                  <button
-                    onClick={() => fileService.descargar(a.idArchivo, a.nombre)}
-                    className="btn-ghost btn-sm"
-                    title="Descargar"
-                  >⬇️</button>
-                  <button
-                    onClick={() => handleFileDelete(a.idArchivo)}
-                    className="btn-ghost btn-sm text-red-500"
-                    title="Eliminar"
-                  >🗑️</button>
+                <div className="flex gap-0.5 ml-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => fileService.descargar(a.idArchivo, a.nombre)} className="btn-ghost btn-sm" title="Descargar">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  </button>
+                  <button onClick={() => handleFileDelete(a.idArchivo)} className="btn-ghost btn-sm hover:text-danger" title="Eliminar">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    </svg>
+                  </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
 
-      <Modal
-        open={delOpen}
-        title="¿Eliminar esta tarea?"
-        message={`"${tarea.titulo}" será eliminada permanentemente.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDelOpen(false)}
-      />
+      <Modal open={delOpen} title="¿Eliminar esta tarea?" message={`"${tarea.titulo}" se eliminará permanentemente.`} onConfirm={handleDelete} onCancel={() => setDelOpen(false)} confirmLabel="Eliminar" />
     </div>
   )
 }

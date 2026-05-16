@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { taskService } from '../../services/taskService'
-import { PrioridadBadge, EstadoBadge } from '../../components/Badge'
+import { PrioridadBadge, EstadoBadge, CategoriaBadge } from '../../components/Badge'
 import { Modal } from '../../components/Modal'
 import { PageLoader } from '../../components/LoadingSpinner'
 import { toast } from '../../components/Toast'
 
 export function TaskListPage() {
-  const [tareas, setTareas] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [tareas, setTareas]     = useState([])
+  const [loading, setLoading]   = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -19,7 +20,7 @@ export function TaskListPage() {
   const load = () => {
     setLoading(true)
     taskService.getAll()
-      .then(data => setTareas(data))
+      .then(setTareas)
       .catch(e => toast.error(e.message))
       .finally(() => setLoading(false))
   }
@@ -43,38 +44,34 @@ export function TaskListPage() {
   const handleDelete = async () => {
     try {
       await taskService.delete(deleteId)
-      toast.success('Tarea eliminada.')
-      setDeleteId(null)
-      load()
-    } catch (e) {
-      toast.error(e.message)
-      setDeleteId(null)
-    }
+      toast.success('Tarea eliminada')
+      setDeleteId(null); load()
+    } catch (e) { toast.error(e.message); setDeleteId(null) }
   }
 
+  const hasFilters = estado || prioridad || q
+
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold text-foreground">Mis Tareas
-          <span className="ml-2 text-sm font-mono font-normal text-muted-fg">({filtered.length})</span>
-        </h2>
-        <Link to="/tasks/new" className="btn-primary">+ Nueva</Link>
+    <div className="space-y-5">
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-foreground">Mis tareas</h1>
+          <p className="text-sm text-muted-fg mt-1">
+            <span className="font-mono">{filtered.length}</span> {filtered.length === 1 ? 'tarea' : 'tareas'}
+            {hasFilters && tareas.length !== filtered.length && <span className="text-ink-faint"> de {tareas.length}</span>}
+          </p>
+        </div>
+        <Link to="/tasks/new" className="btn-primary">+ Nueva tarea</Link>
       </div>
 
       {/* Filters */}
-      <div className="card p-4 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <input
-            className="input"
-            placeholder="🔍 Buscar tareas..."
-            value={q}
-            onChange={e => setFilter('q', e.target.value)}
-          />
+      <div className="card p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <input className="input" placeholder="Buscar..." value={q} onChange={e => setFilter('q', e.target.value)} />
           <select className="select" value={estado} onChange={e => setFilter('estado', e.target.value)}>
             <option value="">Todos los estados</option>
             <option value="PENDIENTE">Pendiente</option>
-            <option value="EN_PROGRESO">En Progreso</option>
+            <option value="EN_PROGRESO">En progreso</option>
             <option value="COMPLETADA">Completada</option>
             <option value="CANCELADA">Cancelada</option>
           </select>
@@ -84,69 +81,69 @@ export function TaskListPage() {
             <option value="MEDIA">Media</option>
             <option value="BAJA">Baja</option>
           </select>
-          <button
-            onClick={() => setSearchParams({})}
-            className="btn-secondary"
-          >
-            Limpiar filtros
-          </button>
+          <button onClick={() => setSearchParams({})} disabled={!hasFilters} className="btn-secondary justify-center disabled:opacity-50 disabled:cursor-not-allowed">Limpiar</button>
         </div>
       </div>
 
-      {loading ? <PageLoader /> : (
+      {loading ? <PageLoader /> : filtered.length === 0 ? (
+        <div className="card p-12 text-center">
+          <p className="text-sm text-muted-fg">No hay tareas que coincidan.</p>
+          <Link to="/tasks/new" className="btn-secondary mt-3 inline-flex">+ Crear una</Link>
+        </div>
+      ) : (
         <>
-          {/* TABLE — desktop */}
+          {/* TABLE desktop */}
           <div className="card hidden sm:block overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-muted text-muted-fg text-xs uppercase tracking-wide font-mono">
-                    <th className="px-4 py-3 text-left">ID</th>
-                    <th className="px-4 py-3 text-left">Título</th>
-                    <th className="px-4 py-3 text-left">Prioridad</th>
-                    <th className="px-4 py-3 text-left">Estado</th>
-                    <th className="px-4 py-3 text-left">Categoría</th>
-                    <th className="px-4 py-3 text-left">Vencimiento</th>
-                    <th className="px-4 py-3 text-right">Acciones</th>
+                  <tr className="text-2xs uppercase tracking-wider text-ink-faint border-b border-border">
+                    <th className="px-4 py-2.5 text-left font-medium w-12">#</th>
+                    <th className="px-4 py-2.5 text-left font-medium">Título</th>
+                    <th className="px-4 py-2.5 text-left font-medium">Prioridad</th>
+                    <th className="px-4 py-2.5 text-left font-medium">Estado</th>
+                    <th className="px-4 py-2.5 text-left font-medium">Categoría</th>
+                    <th className="px-4 py-2.5 text-left font-medium">Vencimiento</th>
+                    <th className="px-4 py-2.5 text-right font-medium"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filtered.length === 0 && (
-                    <tr><td colSpan="7" className="text-center py-12 text-muted-fg">
-                      <p className="text-2xl mb-2">📭</p>
-                      No hay tareas. <Link to="/tasks/new" className="text-primary hover:underline">Crea una</Link>
-                    </td></tr>
-                  )}
-                  {filtered.map(t => {
+                  {filtered.map((t, i) => {
                     const vc = t.fechaVencimiento ? new Date(t.fechaVencimiento) : null
-                    const vencida = vc && vc < new Date() && t.estado !== 'COMPLETADA'
+                    const vencida = vc && vc < new Date() && t.estado !== 'COMPLETADA' && t.estado !== 'CANCELADA'
                     return (
-                      <tr key={t.idTarea} className="table-row-hover">
-                        <td className="px-4 py-3 font-mono text-muted-fg text-xs">#{t.idTarea}</td>
-                        <td className="px-4 py-3">
-                          <Link to={`/tasks/${t.idTarea}`} className="font-medium text-foreground hover:text-primary transition-colors">
-                            {t.titulo}
-                          </Link>
-                          {t.descripcion && <p className="text-xs text-muted-fg truncate max-w-xs">{t.descripcion}</p>}
+                      <motion.tr
+                        key={t.idTarea}
+                        initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.18, delay: Math.min(i * 0.015, 0.3) }}
+                        className="table-row group"
+                      >
+                        <td className="px-4 py-2.5 font-mono text-ink-faint text-2xs">{t.idTarea}</td>
+                        <td className="px-4 py-2.5">
+                          <Link to={`/tasks/${t.idTarea}`} className="font-medium text-foreground hover:text-primary transition-colors">{t.titulo}</Link>
+                          {t.descripcion && <p className="text-2xs text-ink-faint truncate max-w-md mt-0.5">{t.descripcion}</p>}
                         </td>
-                        <td className="px-4 py-3"><PrioridadBadge value={t.prioridad} /></td>
-                        <td className="px-4 py-3"><EstadoBadge value={t.estado} /></td>
-                        <td className="px-4 py-3">
-                          {t.categoria
-                            ? <span className="badge bg-gray-100 text-gray-600">{t.categoria}</span>
-                            : <span className="text-muted-fg">—</span>}
+                        <td className="px-4 py-2.5"><PrioridadBadge value={t.prioridad} /></td>
+                        <td className="px-4 py-2.5"><EstadoBadge value={t.estado} /></td>
+                        <td className="px-4 py-2.5"><CategoriaBadge value={t.categoria} /></td>
+                        <td className={`px-4 py-2.5 text-2xs font-mono ${vencida ? 'text-danger font-semibold' : 'text-muted-fg'}`}>
+                          {vc ? vc.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                         </td>
-                        <td className={`px-4 py-3 text-xs font-mono ${vencida ? 'text-red-600 font-bold' : 'text-muted-fg'}`}>
-                          {vc ? vc.toLocaleDateString('es-CO') : '—'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1">
-                            <Link to={`/tasks/${t.idTarea}`} className="btn-ghost btn-sm">Ver</Link>
-                            <Link to={`/tasks/${t.idTarea}/edit`} className="btn-ghost btn-sm text-primary">Editar</Link>
-                            <button onClick={() => setDeleteId(t.idTarea)} className="btn-ghost btn-sm text-red-500">Eliminar</button>
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Link to={`/tasks/${t.idTarea}/edit`} className="btn-ghost btn-sm" title="Editar">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            </Link>
+                            <button onClick={() => setDeleteId(t.idTarea)} className="btn-ghost btn-sm hover:text-danger" title="Eliminar">
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
+                              </svg>
+                            </button>
                           </div>
                         </td>
-                      </tr>
+                      </motion.tr>
                     )
                   })}
                 </tbody>
@@ -154,41 +151,34 @@ export function TaskListPage() {
             </div>
           </div>
 
-          {/* CARDS — mobile */}
-          <div className="sm:hidden space-y-3">
-            {filtered.length === 0 && (
-              <div className="card p-8 text-center text-muted-fg">
-                <p className="text-2xl mb-2">📭</p>
-                No hay tareas. <Link to="/tasks/new" className="text-primary">Crea una</Link>
-              </div>
-            )}
-            {filtered.map(t => (
-              <div key={t.idTarea} className="card p-4 border-l-4"
-                   style={{ borderLeftColor: t.prioridad === 'ALTA' ? '#DC2626' : t.prioridad === 'MEDIA' ? '#D97706' : '#16A34A' }}>
-                <Link to={`/tasks/${t.idTarea}`} className="block">
-                  <p className="font-semibold text-foreground mb-2">{t.titulo}</p>
+          {/* CARDS mobile */}
+          <div className="sm:hidden space-y-2">
+            {filtered.map((t, i) => (
+              <motion.div key={t.idTarea}
+                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.18, delay: Math.min(i * 0.02, 0.2) }}
+                className="card card-hover p-3"
+              >
+                <Link to={`/tasks/${t.idTarea}`} className="block mb-2">
+                  <p className="font-medium text-foreground">{t.titulo}</p>
+                  {t.descripcion && <p className="text-2xs text-ink-faint truncate mt-0.5">{t.descripcion}</p>}
                 </Link>
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
                   <PrioridadBadge value={t.prioridad} />
                   <EstadoBadge value={t.estado} />
+                  <CategoriaBadge value={t.categoria} />
                 </div>
                 <div className="flex gap-2">
                   <Link to={`/tasks/${t.idTarea}/edit`} className="btn-secondary btn-sm flex-1 justify-center">Editar</Link>
-                  <button onClick={() => setDeleteId(t.idTarea)} className="btn-ghost btn-sm text-red-500">Eliminar</button>
+                  <button onClick={() => setDeleteId(t.idTarea)} className="btn-ghost btn-sm text-danger">Eliminar</button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </>
       )}
 
-      <Modal
-        open={!!deleteId}
-        title="¿Eliminar tarea?"
-        message="Esta acción no se puede deshacer."
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-      />
+      <Modal open={!!deleteId} title="¿Eliminar tarea?" message="Esta acción no se puede deshacer." onConfirm={handleDelete} onCancel={() => setDeleteId(null)} confirmLabel="Eliminar" />
     </div>
   )
 }

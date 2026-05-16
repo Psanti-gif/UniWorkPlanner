@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { taskService } from '../../services/taskService'
 import { PageLoader } from '../../components/LoadingSpinner'
 import { toast } from '../../components/Toast'
@@ -17,7 +18,7 @@ function fmt(date) {
 
 export function TaskFormPage() {
   const { id } = useParams()
-  const isEdit  = Boolean(id)
+  const isEdit = Boolean(id)
   const navigate = useNavigate()
   const [form, setForm]       = useState(EMPTY)
   const [loading, setLoading] = useState(isEdit)
@@ -26,10 +27,7 @@ export function TaskFormPage() {
   useEffect(() => {
     if (!isEdit) return
     taskService.getById(id)
-      .then(t => setForm({
-        ...t,
-        fechaVencimiento: fmt(t.fechaVencimiento),
-      }))
+      .then(t => setForm({ ...t, fechaVencimiento: fmt(t.fechaVencimiento) }))
       .catch(e => { toast.error(e.message); navigate('/tasks') })
       .finally(() => setLoading(false))
   }, [id])
@@ -38,8 +36,8 @@ export function TaskFormPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.titulo.trim()) { toast.error('El título es obligatorio.'); return }
-    if (!form.prioridad)     { toast.error('Selecciona una prioridad.'); return }
+    if (!form.titulo.trim()) { toast.error('El título es obligatorio'); return }
+    if (!form.prioridad)     { toast.error('Selecciona una prioridad'); return }
 
     setSaving(true)
     try {
@@ -47,105 +45,95 @@ export function TaskFormPage() {
         ...form,
         fechaVencimiento: form.fechaVencimiento ? (() => {
           const [y, m, d] = form.fechaVencimiento.split('-').map(Number)
-          return new Date(y, m - 1, d).getTime() // local midnight, not UTC
+          return new Date(y, m - 1, d).getTime()
         })() : null,
       }
       if (isEdit) {
-        await taskService.update(payload)
-        toast.success('Tarea actualizada.')
-        navigate(`/tasks/${id}`)
+        await taskService.update(payload); toast.success('Tarea actualizada'); navigate(`/tasks/${id}`)
       } else {
-        await taskService.create(payload)
-        toast.success('Tarea creada.')
-        navigate('/tasks')
+        await taskService.create(payload); toast.success('Tarea creada'); navigate('/tasks')
       }
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setSaving(false)
-    }
+    } catch (err) { toast.error(err.message) }
+    finally { setSaving(false) }
   }
 
   if (loading) return <PageLoader />
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-5">
       {/* Breadcrumb */}
-      <nav className="text-xs text-muted-fg mb-4 flex gap-2 items-center font-mono">
-        <a href="/tasks" className="hover:text-primary" onClick={e => { e.preventDefault(); navigate('/tasks') }}>Tareas</a>
+      <nav className="text-2xs text-ink-faint flex items-center gap-1.5 font-mono">
+        <Link to="/tasks" className="hover:text-foreground transition-colors">Tareas</Link>
         <span>/</span>
-        <span className="text-foreground">{isEdit ? 'Editar' : 'Nueva'}</span>
+        <span className="text-muted-fg">{isEdit ? 'Editar' : 'Nueva'}</span>
       </nav>
 
-      <div className="card p-6 md:p-8">
-        <h2 className="text-xl font-bold mb-6 text-foreground">
-          {isEdit ? '✏️ Editar Tarea' : '➕ Nueva Tarea'}
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Título */}
-          <div>
-            <label className="label">Título <span className="text-red-500">*</span></label>
-            <input className="input" value={form.titulo} maxLength={255}
-                   onChange={e => set('titulo', e.target.value)}
-                   placeholder="¿Qué hay que hacer?" />
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="label">Descripción</label>
-            <textarea className="input resize-none" rows={3} value={form.descripcion || ''}
-                      onChange={e => set('descripcion', e.target.value)}
-                      placeholder="Detalles adicionales..." />
-          </div>
-
-          {/* Grid 2-col */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="label">Prioridad <span className="text-red-500">*</span></label>
-              <select className="select" value={form.prioridad} onChange={e => set('prioridad', e.target.value)}>
-                <option value="">Seleccionar...</option>
-                <option value="ALTA">🔴 Alta</option>
-                <option value="MEDIA">🟡 Media</option>
-                <option value="BAJA">🟢 Baja</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Estado</label>
-              <select className="select" value={form.estado} onChange={e => set('estado', e.target.value)}>
-                <option value="PENDIENTE">⏳ Pendiente</option>
-                <option value="EN_PROGRESO">🔵 En Progreso</option>
-                <option value="COMPLETADA">✅ Completada</option>
-                <option value="CANCELADA">❌ Cancelada</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Fecha de Vencimiento</label>
-              <input type="date" className="input" value={form.fechaVencimiento || ''}
-                     onChange={e => set('fechaVencimiento', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Categoría</label>
-              <select className="select" value={form.categoria || ''} onChange={e => set('categoria', e.target.value)}>
-                <option value="">Sin categoría</option>
-                <option value="UNIVERSIDAD">Universidad</option>
-                <option value="TRABAJO">Trabajo</option>
-                <option value="PERSONAL">Personal</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="btn-primary flex-1 sm:flex-none justify-center">
-              {saving ? '⏳ Guardando...' : isEdit ? 'Guardar cambios' : 'Crear Tarea'}
-            </button>
-            <button type="button" onClick={() => navigate(-1)} className="btn-secondary">
-              Cancelar
-            </button>
-          </div>
-        </form>
+      <div>
+        <h1 className="text-foreground">{isEdit ? 'Editar tarea' : 'Nueva tarea'}</h1>
+        <p className="text-sm text-muted-fg mt-1">{isEdit ? 'Modifica los detalles de tu tarea' : 'Crea una nueva tarea para empezar'}</p>
       </div>
+
+      <motion.form
+        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
+        onSubmit={handleSubmit}
+        className="card p-5 sm:p-6 space-y-4"
+      >
+        <div>
+          <label className="label">Título <span className="text-danger">*</span></label>
+          <input className="input" value={form.titulo} maxLength={255}
+            onChange={e => set('titulo', e.target.value)}
+            placeholder="¿Qué hay que hacer?" autoFocus />
+        </div>
+
+        <div>
+          <label className="label">Descripción</label>
+          <textarea className="input resize-none" rows={3} value={form.descripcion || ''}
+            onChange={e => set('descripcion', e.target.value)}
+            placeholder="Detalles adicionales..." />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Prioridad <span className="text-danger">*</span></label>
+            <select className="select" value={form.prioridad} onChange={e => set('prioridad', e.target.value)}>
+              <option value="">Seleccionar...</option>
+              <option value="ALTA">Alta</option>
+              <option value="MEDIA">Media</option>
+              <option value="BAJA">Baja</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Estado</label>
+            <select className="select" value={form.estado} onChange={e => set('estado', e.target.value)}>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="EN_PROGRESO">En progreso</option>
+              <option value="COMPLETADA">Completada</option>
+              <option value="CANCELADA">Cancelada</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Fecha de vencimiento</label>
+            <input type="date" className="input" value={form.fechaVencimiento || ''}
+              onChange={e => set('fechaVencimiento', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Categoría</label>
+            <select className="select" value={form.categoria || ''} onChange={e => set('categoria', e.target.value)}>
+              <option value="">Sin categoría</option>
+              <option value="UNIVERSIDAD">Universidad</option>
+              <option value="TRABAJO">Trabajo</option>
+              <option value="PERSONAL">Personal</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2 border-t border-border">
+          <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60">
+            {saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear tarea'}
+          </button>
+          <button type="button" onClick={() => navigate(-1)} className="btn-secondary">Cancelar</button>
+        </div>
+      </motion.form>
     </div>
   )
 }

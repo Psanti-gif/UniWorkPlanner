@@ -1,21 +1,31 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { taskService } from '../services/taskService'
-import { PrioridadBadge, EstadoBadge } from '../components/Badge'
+import { PrioridadBadge } from '../components/Badge'
 import { PageLoader } from '../components/LoadingSpinner'
 import { toast } from '../components/Toast'
 
-function StatCard({ icon, label, value, colorClass, bgClass }) {
+function StatCard({ label, value, accent, hint, delay = 0 }) {
   return (
-    <div className="stat-card">
-      <div>
-        <p className="text-xs text-muted-fg font-medium uppercase tracking-wide mb-1">{label}</p>
-        {/* UI/UX Skill: Fira Code for numeric stats */}
-        <p className={`text-3xl font-bold font-mono ${colorClass}`}>{value}</p>
-      </div>
-      <div className={`stat-icon ${bgClass}`}>{icon}</div>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay, ease: [0.16, 1, 0.3, 1] }}
+      className="stat-card"
+    >
+      <p className="text-2xs uppercase tracking-wider text-ink-faint font-medium">{label}</p>
+      <p className={`text-3xl font-bold font-mono tracking-tight ${accent || 'text-foreground'}`}>{value}</p>
+      {hint && <p className="text-2xs text-ink-faint mt-auto pt-1">{hint}</p>}
+    </motion.div>
   )
+}
+
+const list = {
+  show: { transition: { staggerChildren: 0.05 } },
+}
+const item = {
+  hidden: { opacity: 0, y: 6 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } },
 }
 
 export function DashboardPage() {
@@ -39,8 +49,7 @@ export function DashboardPage() {
 
   const toDay = (v) => { const d = new Date(v); d.setHours(0, 0, 0, 0); return d }
   const today = toDay(new Date())
-  const limitDay = new Date(today)
-  limitDay.setDate(today.getDate() + 3)
+  const limitDay = new Date(today); limitDay.setDate(today.getDate() + 3)
 
   const proximasVencer = tareas
     .filter(t => {
@@ -59,102 +68,93 @@ export function DashboardPage() {
   const completadas = byEstado['COMPLETADA'] || 0
   const pct = tareas.length ? Math.round((completadas / tareas.length) * 100) : 0
 
+  const ESTADOS_ORDER = ['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA', 'CANCELADA']
+
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
-          <p className="text-sm text-muted-fg mt-0.5">Resumen de tus pendientes</p>
+          <h1 className="text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-fg mt-1">Resumen de tus pendientes — {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
-        <Link to="/tasks/new" className="btn-primary">
-          + Nueva Tarea
-        </Link>
+        <Link to="/tasks/new" className="btn-primary">+ Nueva tarea</Link>
       </div>
 
-      {/* Stats — UI/UX Skill: Drill-Down Analytics, functional colors */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon="📋" label="Total"       value={tareas.length}              colorClass="text-foreground"       bgClass="bg-primary/10 text-primary" />
-        <StatCard icon="✅" label="Completadas"  value={completadas}                colorClass="text-emerald-700"      bgClass="bg-emerald-100 text-emerald-600" />
-        <StatCard icon="🔵" label="En Progreso"  value={byEstado['EN_PROGRESO']||0} colorClass="text-blue-700"         bgClass="bg-blue-100 text-blue-600" />
-        <StatCard icon="⚠️" label="Vencidas"    value={vencidas.length}            colorClass="text-red-700"          bgClass="bg-red-100 text-red-600" />
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Total"        value={tareas.length}              delay={0.00} hint={`${tareas.length === 1 ? 'tarea' : 'tareas'} totales`} />
+        <StatCard label="Completadas"  value={completadas}                delay={0.05} hint={`${pct}% del total`} accent="text-success" />
+        <StatCard label="En progreso"  value={byEstado['EN_PROGRESO']||0} delay={0.10} accent="text-info" />
+        <StatCard label="Vencidas"     value={vencidas.length}            delay={0.15} accent={vencidas.length > 0 ? 'text-danger' : 'text-foreground'} hint={vencidas.length > 0 ? 'requieren atención' : 'todo al día'} />
       </div>
 
-      {/* Progress bar */}
-      <div className="card p-4 mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-foreground">Progreso general</span>
-          <span className="text-sm font-mono font-bold text-primary">{pct}%</span>
+      {/* Progress */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="card p-5">
+        <div className="flex items-center justify-between mb-2.5">
+          <div>
+            <p className="text-sm font-medium text-foreground">Progreso general</p>
+            <p className="text-2xs text-ink-faint mt-0.5">{completadas} de {tareas.length} tareas completadas</p>
+          </div>
+          <span className="text-2xl font-mono font-bold text-foreground tracking-tight">{pct}<span className="text-base text-muted-fg">%</span></span>
         </div>
-        <div className="w-full bg-muted rounded-full h-2.5">
-          <div
-            className="bg-primary h-2.5 rounded-full transition-all duration-700"
-            style={{ width: `${pct}%` }}
-          />
+        <div className="w-full bg-muted-2 rounded-full h-1.5 overflow-hidden">
+          <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }} className="bg-foreground h-full rounded-full" />
         </div>
-        <p className="text-xs text-muted-fg mt-1.5">{completadas} de {tareas.length} tareas completadas</p>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Próximas a vencer */}
-        <div className="card">
-          <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-            <span className="text-amber-500">⏰</span>
-            <h3 className="font-semibold text-sm">Próximas a vencer (3 días)</h3>
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.25 }} className="card overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Próximas a vencer</h3>
+            <span className="text-2xs text-ink-faint font-mono">{proximasVencer.length} en 3 días</span>
           </div>
-          <div className="divide-y divide-border">
+          <motion.div variants={list} initial="hidden" animate="show" className="divide-y divide-border">
             {proximasVencer.length === 0 ? (
-              <div className="px-5 py-8 text-center text-muted-fg text-sm">
-                <p className="text-2xl mb-2">🎉</p>
-                Sin tareas urgentes
-              </div>
+              <div className="px-5 py-10 text-center text-muted-fg text-sm">Sin tareas urgentes</div>
             ) : proximasVencer.map(t => (
-              <div key={t.idTarea} className="px-5 py-3 flex items-center justify-between hover:bg-primary/5 transition-colors">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{t.titulo}</p>
-                  <p className="text-xs text-amber-600 font-mono mt-0.5">
-                    {new Date(t.fechaVencimiento).toLocaleDateString('es-CO')}
-                  </p>
+              <motion.div key={t.idTarea} variants={item} className="px-5 py-3 flex items-center justify-between hover:bg-muted/60 transition-colors">
+                <div className="min-w-0 flex-1">
+                  <Link to={`/tasks/${t.idTarea}`} className="text-sm font-medium text-foreground hover:text-primary transition-colors block truncate">{t.titulo}</Link>
+                  <p className="text-2xs text-warning font-mono mt-0.5">{new Date(t.fechaVencimiento).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}</p>
                 </div>
-                <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                <div className="ml-3 flex-shrink-0">
                   <PrioridadBadge value={t.prioridad} />
-                  <Link to={`/tasks/${t.idTarea}`} className="btn-ghost btn-sm">Ver →</Link>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        {/* Estado breakdown — UI/UX Skill: bar chart style */}
-        <div className="card">
-          <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-            <span>📊</span>
-            <h3 className="font-semibold text-sm">Distribución por estado</h3>
+        {/* Distribución por estado */}
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }} className="card overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-border">
+            <h3 className="text-sm font-semibold">Distribución por estado</h3>
           </div>
           <div className="p-5 space-y-3">
             {tareas.length === 0 ? (
               <p className="text-center text-muted-fg text-sm py-6">No hay tareas aún</p>
-            ) : Object.entries(byEstado).map(([estado, count]) => (
-              <div key={estado}>
-                <div className="flex justify-between items-center mb-1">
-                  <EstadoBadge value={estado} />
-                  <span className="text-xs font-mono font-bold text-foreground">{count}</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-1.5">
-                  <div
-                    className="h-1.5 rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${(count / tareas.length) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+            ) : ESTADOS_ORDER.filter(e => byEstado[e]).map((estado, i) => {
+              const count = byEstado[estado]
+              const pctEst = (count / tareas.length) * 100
+              const labelMap = { PENDIENTE: 'Pendientes', EN_PROGRESO: 'En progreso', COMPLETADA: 'Completadas', CANCELADA: 'Canceladas' }
+              const colorMap = { PENDIENTE: 'bg-warning', EN_PROGRESO: 'bg-info', COMPLETADA: 'bg-success', CANCELADA: 'bg-ink-faint' }
+              return (
+                <motion.div key={estado} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 + i * 0.05 }}>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs text-foreground font-medium">{labelMap[estado]}</span>
+                    <span className="text-2xs font-mono text-muted-fg">{count}</span>
+                  </div>
+                  <div className="w-full bg-muted-2 rounded h-1 overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${pctEst}%` }} transition={{ duration: 0.6, delay: 0.4 + i * 0.05, ease: [0.16, 1, 0.3, 1] }} className={`h-full rounded ${colorMap[estado]}`} />
+                  </div>
+                </motion.div>
+              )
+            })}
+            <Link to="/tasks/kanban" className="btn-secondary w-full justify-center mt-4">Ver tablero Kanban →</Link>
           </div>
-          <div className="px-5 pb-4">
-            <Link to="/tasks/kanban" className="btn-secondary w-full justify-center">
-              Ver Tablero Kanban →
-            </Link>
-          </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

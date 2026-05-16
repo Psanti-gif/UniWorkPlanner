@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { taskService } from '../../services/taskService'
 import { PrioridadBadge } from '../../components/Badge'
 import { PageLoader } from '../../components/LoadingSpinner'
 import { toast } from '../../components/Toast'
 
 const COLS = [
-  { id: 'PENDIENTE',   label: 'Pendiente',   color: 'border-amber-400',  bg: 'bg-amber-50',  dot: 'bg-amber-400' },
-  { id: 'EN_PROGRESO', label: 'En Progreso',  color: 'border-blue-400',   bg: 'bg-blue-50',   dot: 'bg-blue-400' },
-  { id: 'COMPLETADA',  label: 'Completada',   color: 'border-emerald-400', bg: 'bg-emerald-50',dot: 'bg-emerald-400' },
-  { id: 'CANCELADA',   label: 'Cancelada',    color: 'border-red-400',    bg: 'bg-red-50',    dot: 'bg-red-400' },
+  { id: 'PENDIENTE',   label: 'Pendiente',    dot: 'bg-warning' },
+  { id: 'EN_PROGRESO', label: 'En progreso',  dot: 'bg-info' },
+  { id: 'COMPLETADA',  label: 'Completada',   dot: 'bg-success' },
+  { id: 'CANCELADA',   label: 'Cancelada',    dot: 'bg-ink-faint' },
 ]
+
+const PRIORITY_BAR = { ALTA: 'bg-danger', MEDIA: 'bg-warning', BAJA: 'bg-success' }
 
 export function KanbanPage() {
   const [tareas, setTareas]     = useState([])
@@ -35,21 +38,18 @@ export function KanbanPage() {
   }
 
   const onDrop = async (e, colId) => {
-    e.preventDefault()
-    setDragOver(null)
+    e.preventDefault(); setDragOver(null)
     const id = draggingId.current
     if (!id) return
     const tarea = tareas.find(t => t.idTarea === id)
     if (!tarea || tarea.estado === colId) return
 
-    // Optimistic update
     setTareas(prev => prev.map(t => t.idTarea === id ? { ...t, estado: colId } : t))
     try {
       await taskService.updateStatus(id, colId)
-      toast.success(`Movido a ${colId.replace('_', ' ')}`)
+      toast.success(`Movido a ${colId.replace('_', ' ').toLowerCase()}`)
     } catch (err) {
-      toast.error(err.message)
-      load() // revert
+      toast.error(err.message); load()
     }
     draggingId.current = null
   }
@@ -57,77 +57,78 @@ export function KanbanPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold text-foreground">Tablero Kanban</h2>
-        <Link to="/tasks/new" className="btn-primary btn-sm">+ Nueva Tarea</Link>
+    <div className="space-y-5">
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-foreground">Tablero Kanban</h1>
+          <p className="text-sm text-muted-fg mt-1">Arrastra las tareas entre columnas</p>
+        </div>
+        <Link to="/tasks/new" className="btn-primary">+ Nueva tarea</Link>
       </div>
 
-      {/* Kanban board — UI/UX Skill: horizontal scroll on mobile */}
-      <div className="flex gap-4 overflow-x-auto pb-4 items-start">
-        {COLS.map(col => {
+      <div className="flex gap-3 overflow-x-auto pb-4 items-start">
+        {COLS.map((col, colIdx) => {
           const items = byCol(col.id)
           return (
-            <div
+            <motion.div
               key={col.id}
-              className={`kanban-col flex-shrink-0 w-64 border-t-4 ${col.color} ${dragOver === col.id ? 'ring-2 ring-primary/40 bg-primary/5' : ''}`}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: colIdx * 0.05 }}
+              className={`kanban-col ${dragOver === col.id ? 'drag-over' : ''}`}
               onDragOver={e => { e.preventDefault(); setDragOver(col.id) }}
               onDragLeave={() => setDragOver(null)}
               onDrop={e => onDrop(e, col.id)}
             >
-              {/* Column header */}
-              <div className="flex items-center justify-between mb-3 px-1">
+              <div className="flex items-center justify-between mb-2.5 px-1">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${col.dot}`} />
-                  <span className="text-xs font-semibold font-mono text-foreground uppercase tracking-wide">
-                    {col.label}
-                  </span>
+                  <div className={`w-1.5 h-1.5 rounded-full ${col.dot}`} />
+                  <span className="text-2xs font-semibold text-foreground uppercase tracking-wider">{col.label}</span>
                 </div>
-                <span className="text-xs font-mono bg-white rounded-full px-2 py-0.5 text-muted-fg shadow-sm">
-                  {items.length}
-                </span>
+                <span className="text-2xs font-mono text-ink-faint">{items.length}</span>
               </div>
 
-              {/* Cards */}
-              <div className="space-y-2 min-h-[80px]">
-                {items.map(t => {
-                  const vc = t.fechaVencimiento ? new Date(t.fechaVencimiento) : null
-                  const vencida = vc && vc < new Date() && t.estado !== 'COMPLETADA'
-                  return (
-                    <div
-                      key={t.idTarea}
-                      className={`kanban-card border-l-4 ${
-                        t.prioridad === 'ALTA'  ? 'border-l-red-400' :
-                        t.prioridad === 'MEDIA' ? 'border-l-amber-400' :
-                        t.prioridad === 'BAJA'  ? 'border-l-emerald-400' : 'border-l-gray-300'
-                      }`}
-                      draggable
-                      onDragStart={e => onDragStart(e, t.idTarea)}
-                      onDragEnd={e => { e.currentTarget.style.opacity = '1' }}
-                    >
-                      <Link to={`/tasks/${t.idTarea}`} className="block mb-2">
-                        <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">
-                          {t.titulo}
-                        </p>
-                      </Link>
-                      <div className="flex items-center justify-between">
-                        <PrioridadBadge value={t.prioridad} />
-                        {vc && (
-                          <span className={`text-xs font-mono ${vencida ? 'text-red-500 font-bold' : 'text-muted-fg'}`}>
-                            {vc.toLocaleDateString('es-CO', { day:'2-digit', month:'2-digit' })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="space-y-1.5 min-h-[60px]">
+                <AnimatePresence>
+                  {items.map(t => {
+                    const vc = t.fechaVencimiento ? new Date(t.fechaVencimiento) : null
+                    const vencida = vc && vc < new Date() && t.estado !== 'COMPLETADA' && t.estado !== 'CANCELADA'
+                    return (
+                      <motion.div
+                        key={t.idTarea}
+                        layout
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                        className="kanban-card"
+                        draggable
+                        onDragStart={e => onDragStart(e, t.idTarea)}
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className={`w-0.5 h-4 mt-0.5 rounded-full flex-shrink-0 ${PRIORITY_BAR[t.prioridad] || 'bg-ink-faint'}`} />
+                          <Link to={`/tasks/${t.idTarea}`} className="text-sm font-medium text-foreground leading-snug line-clamp-2 hover:text-primary transition-colors">
+                            {t.titulo}
+                          </Link>
+                        </div>
+                        <div className="flex items-center justify-between pl-2.5">
+                          <PrioridadBadge value={t.prioridad} />
+                          {vc && (
+                            <span className={`text-2xs font-mono ${vencida ? 'text-danger font-semibold' : 'text-ink-faint'}`}>
+                              {vc.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </AnimatePresence>
                 {items.length === 0 && (
-                  <div className={`rounded-lg border-2 border-dashed border-gray-200 p-4 text-center text-xs text-muted-fg ${col.bg}`}>
+                  <div className="rounded-md border border-dashed border-border-2 p-4 text-center text-2xs text-ink-faint">
                     Arrastrar aquí
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )
         })}
       </div>
