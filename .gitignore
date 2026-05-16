@@ -34,3 +34,12 @@ desktop.ini
 
 # --- Logs ---
 *.log
+
+# --- Local secrets / uploads ---
+application-local.yaml
+application-local.properties
+backend/uploads/
+uploads/
+
+# --- Workspaces / scratch ---
+.claude/

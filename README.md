@@ -2,6 +2,8 @@
 
 Aplicación web para gestionar pendientes de universidad y trabajo.
 
+> 👉 **¿Vas a instalar el proyecto por primera vez?** Lee [**SETUP.md**](SETUP.md) — guía paso a paso para principiantes (XAMPP, MySQL Workbench, Java, Node, API key, etc.).
+
 ## Integrantes
 
 | Integrante | Rol |
